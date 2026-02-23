@@ -11,6 +11,8 @@ from rest_framework_simplejwt.views import (
     TokenVerifyView,
 )
 
+from core.rest.views.dashboard import DashboardAPIView
+
 schema_view = get_schema_view(
     openapi.Info(
         title="Tour_management API",
@@ -60,5 +62,6 @@ urlpatterns = [
     path("api/v1/admin/customers/", include("core.rest.urls.customers")),
     path("api/v1/me/", include("core.rest.urls.me")),
     path("api/v1/admin/token/", include("core.rest.urls.admin_token")),
+    path("api/v1/dashboard", DashboardAPIView.as_view(), name="dashboard"),
 ]
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
