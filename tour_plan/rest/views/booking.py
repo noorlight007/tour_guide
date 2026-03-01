@@ -27,8 +27,8 @@ class BookingListCreateAPIView(ListCreateAPIView):
     def get_queryset(self):
         user_role = self.request.user.role
         if user_role in ["ADMIN", "SUPER_ADMIN"]:
-            return Booking.objects.filter()
-        return Booking.objects.filter(user=self.request.user)
+            return Booking.objects.filter().order_by("created_at")
+        return Booking.objects.filter(user=self.request.user).order_by("created_at")
 
 
 class BookingRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
