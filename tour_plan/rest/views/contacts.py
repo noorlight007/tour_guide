@@ -10,7 +10,7 @@ from tour_plan.rest.serializers.contacts import ContactSerializer
 
 class ContactListCreateAPIView(ListCreateAPIView):
     serializer_class = ContactSerializer
-    queryset = Contact.objects.filter()
+    queryset = Contact.objects.filter().order_by("-created_at")
     filter_backends = [
         DjangoFilterBackend,
     ]
