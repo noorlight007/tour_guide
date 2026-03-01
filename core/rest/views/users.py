@@ -14,7 +14,7 @@ class UserListCreateApiView(ListCreateAPIView):
         queryset = User.objects.filter(role=UserRole.ADMIN)
         queryset = list(queryset)
         queryset.append(self.request.user)
-        return super().get_queryset()
+        return queryset
 
 
 class UserDetailsApiVew(RetrieveUpdateDestroyAPIView):
@@ -26,4 +26,4 @@ class UserDetailsApiVew(RetrieveUpdateDestroyAPIView):
         queryset = User.objects.filter(role=UserRole.ADMIN)
         queryset = list(queryset)
         queryset.append(self.request.user)
-        return super().get_queryset()
+        return queryset
