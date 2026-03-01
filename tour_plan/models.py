@@ -249,7 +249,7 @@ class BookingItem(models.Model):
     num_infants = models.PositiveIntegerField(default=0)
     num_youth = models.PositiveIntegerField(default=0)
     num_student_eu = models.PositiveIntegerField(default=0)
-    item_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True)
+    item_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True,null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -276,7 +276,7 @@ class BookingItem(models.Model):
                     updated_price - self.item_price
                 )
             self.booking.save()
-            self.item_price = updated_price
+        self.item_price = updated_price
         super().save(*args, **kwargs)
 
 
