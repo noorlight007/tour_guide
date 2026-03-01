@@ -17,6 +17,7 @@ class Location(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
@@ -29,6 +30,8 @@ class Image(models.Model):
         choices=Status.choices,
         default=Status.ACTIVE,
     )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.status}"
@@ -99,6 +102,7 @@ class TourDate(models.Model):
     date = models.DateField()
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = ("tour_plan", "date")
@@ -121,6 +125,7 @@ class TimeSlot(models.Model):
     available_student_eu = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = ("tour_date", "start_time")
@@ -251,6 +256,7 @@ class BookingItem(models.Model):
     num_student_eu = models.PositiveIntegerField(default=0)
     item_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True,null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"Booking Item - {self.booking.id} - {self.tour_plan.title}"
@@ -284,6 +290,8 @@ class Notice(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
     is_active = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
         if self.is_active:
@@ -306,3 +314,5 @@ class Contact(models.Model):
     message = models.TextField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="open")
     cancelled_reason = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
