@@ -266,7 +266,7 @@ class BookingItem(models.Model):
 
     def save(self, *args, **kwargs):
         updated_price = self.calculate_item_price()
-        if updated_price != self.item_price:
+        if updated_price != self.item_price and self.item_price:
             if self.item_price > updated_price:
                 self.booking.total_price = self.booking.total_price - (
                     self.item_price - updated_price
