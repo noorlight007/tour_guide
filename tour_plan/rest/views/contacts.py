@@ -1,4 +1,5 @@
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
@@ -11,9 +12,8 @@ from tour_plan.rest.serializers.contacts import ContactSerializer
 class ContactListCreateAPIView(ListCreateAPIView):
     serializer_class = ContactSerializer
     queryset = Contact.objects.filter().order_by("-created_at")
-    filter_backends = [
-        DjangoFilterBackend,
-    ]
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    search_fields = ["first_name", "last_name", "email", "phone"]
     filterset_class = ContactFilter
 
     def get_permissions(self):
