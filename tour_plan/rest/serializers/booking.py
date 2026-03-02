@@ -264,7 +264,7 @@ class BookingDetailsSerializer(serializers.ModelSerializer):
 
     def get_items(self, object):
         items = BookingItem.objects.filter(booking=object)
-        return BookingItemSerializer(items, many=True).data
+        return BookingItemSerializerForBookinDetails(items, many=True).data
 
     def validate(self, attrs):
         status = attrs.get("status")
