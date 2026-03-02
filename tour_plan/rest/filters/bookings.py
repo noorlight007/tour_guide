@@ -4,8 +4,10 @@ from tour_plan.models import Booking
 
 
 class BookingFilter(django_filters.FilterSet):
-    category = django_filters.BaseInFilter(field_name="status", lookup_expr="in")
+    id = django_filters.CharFilter(field_name="id", lookup_expr="icontains")
+    created_at_from = django_filters.DateTimeFilter(field_name="created_at", lookup_expr="gte")
+    created_at_to = django_filters.DateTimeFilter(field_name="created_at", lookup_expr="lte")
 
     class Meta:
         model = Booking
-        fields = ["status"]
+        fields = ["status", "id", "created_at_from", "created_at_to"]

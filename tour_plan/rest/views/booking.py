@@ -1,4 +1,5 @@
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
@@ -14,10 +15,9 @@ from tour_plan.rest.serializers.booking import (
 
 class BookingListCreateAPIView(ListCreateAPIView):
     serializer_class = BookingSerializer
-    filter_backends = [
-        DjangoFilterBackend,
-    ]
+    filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_class = BookingFilter
+    search_fields = ["id"]
 
     def get_permissions(self):
         if self.request.method == "POST":
