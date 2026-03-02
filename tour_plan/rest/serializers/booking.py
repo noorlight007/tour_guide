@@ -228,7 +228,9 @@ class BookingSerializer(serializers.ModelSerializer):
                 booking_item.time_slot.available_adults -= booking_item.num_adults
                 booking_item.time_slot.available_children -= booking_item.num_children
                 booking_item.time_slot.available_infants -= booking_item.num_infants
-                booking_item.time_slot.available_student_eu -= booking_item.num_student_eu
+                booking_item.time_slot.available_student_eu -= (
+                    booking_item.num_student_eu
+                )
                 booking_item.time_slot.available_youth -= booking_item.num_youth
                 booking_item.time_slot.save()
 
@@ -264,7 +266,9 @@ class BookingDetailsSerializer(serializers.ModelSerializer):
 
     def get_items(self, object):
         items = BookingItem.objects.filter(booking=object)
-        return BookingItemSerializerForBookinDetails(items, many=True).data
+        return BookingItemSerializerForBookinDetails(
+            items, many=True, context=self.context
+        ).data
 
     def validate(self, attrs):
         status = attrs.get("status")
