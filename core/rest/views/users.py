@@ -23,7 +23,4 @@ class UserDetailsApiVew(RetrieveUpdateDestroyAPIView):
     lookup_field = "id"
 
     def get_queryset(self):
-        queryset = User.objects.filter(role=UserRole.ADMIN)
-        queryset = list(queryset)
-        queryset.append(self.request.user)
-        return queryset
+        return User.objects.filter()
