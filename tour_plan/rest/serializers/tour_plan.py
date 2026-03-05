@@ -18,3 +18,11 @@ class TourPlanSerializer(serializers.ModelSerializer):
     class Meta:
         model = TourPlan
         fields = "__all__"
+    
+    def create(self, validated_data):
+        validated_data.pop("max_adults")
+        validated_data.pop("max_children")
+        validated_data.pop("max_infants")
+        validated_data.pop("max_student_eu")
+        validated_data.pop("max_youth")
+        return super().create(validated_data)
