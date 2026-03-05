@@ -40,27 +40,27 @@ class Image(models.Model):
 class TourPlan(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
-    max_adults = models.PositiveIntegerField(validators=[MinValueValidator(1)],default=0)
-    price_adult = models.DecimalField(max_digits=10, decimal_places=2,default=0)
+    max_adults = models.PositiveIntegerField(default=0, null=True, blank=True)
+    price_adult = models.DecimalField(max_digits=10, decimal_places=2)
     adult_age_min = models.PositiveIntegerField(default=18)
     adult_age_max = models.PositiveIntegerField(default=99)
 
-    max_children = models.PositiveIntegerField(default=0)
+    max_children = models.PositiveIntegerField(default=0, null=True, blank=True)
     price_child = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     child_age_min = models.PositiveIntegerField(default=3)
     child_age_max = models.PositiveIntegerField(default=17)
 
-    max_infants = models.PositiveIntegerField(default=0)
+    max_infants = models.PositiveIntegerField(default=0, null=True, blank=True)
     price_infant = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     infant_age_min = models.PositiveIntegerField(default=0)
     infant_age_max = models.PositiveIntegerField(default=2)
 
-    max_youth = models.PositiveIntegerField(default=0)
+    max_youth = models.PositiveIntegerField(default=0, null=True, blank=True)
     price_youth = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     youth_age_min = models.PositiveIntegerField(default=18)
     youth_age_max = models.PositiveIntegerField(default=25)
 
-    max_student_eu = models.PositiveIntegerField(default=0)
+    max_student_eu = models.PositiveIntegerField(default=0, null=True, blank=True)
     price_student_eu = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     student_eu_age_min = models.PositiveIntegerField(default=18)
     student_eu_age_max = models.PositiveIntegerField(default=30)
@@ -118,9 +118,9 @@ class TimeSlot(models.Model):
     )
     start_time = models.TimeField()
     end_time = models.TimeField(null=True, blank=True)
-    available_adults = models.PositiveIntegerField(default=0)
-    available_children = models.PositiveIntegerField(default=0)
-    available_infants = models.PositiveIntegerField(default=0)
+    available_adults = models.PositiveIntegerField()
+    available_children = models.PositiveIntegerField()
+    available_infants = models.PositiveIntegerField()
     available_youth = models.PositiveIntegerField(default=0)
     available_student_eu = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
@@ -174,8 +174,6 @@ class CartItem(models.Model):
             self.num_adults * self.tour_plan.price_adult
             + self.num_children * self.tour_plan.price_child
             + self.num_infants * self.tour_plan.price_infant
-            + self.num_youth * self.tour_plan.price_youth
-            + self.num_student_eu * self.tour_plan.price_student_eu
         )
         return total
 
@@ -254,7 +252,7 @@ class BookingItem(models.Model):
     num_infants = models.PositiveIntegerField(default=0)
     num_youth = models.PositiveIntegerField(default=0)
     num_student_eu = models.PositiveIntegerField(default=0)
-    item_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True,null=True)
+    item_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -271,18 +269,8 @@ class BookingItem(models.Model):
         )
 
     def save(self, *args, **kwargs):
-        updated_price = self.calculate_item_price()
-        if updated_price != self.item_price and self.item_price:
-            if self.item_price > updated_price:
-                self.booking.total_price = self.booking.total_price - (
-                    self.item_price - updated_price
-                )
-            else:
-                self.booking.total_price = self.booking.total_price + (
-                    updated_price - self.item_price
-                )
-            self.booking.save()
-        self.item_price = updated_price
+        if not self.item_price:
+            self.item_price = self.calculate_item_price()
         super().save(*args, **kwargs)
 
 
