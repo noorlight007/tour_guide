@@ -14,11 +14,16 @@ class TourPlanSerializer(serializers.ModelSerializer):
     location_ids = serializers.PrimaryKeyRelatedField(
         queryset=Location.objects.all(), many=True, write_only=True, source="locations"
     )
+    max_adults = serializers.CharField(required=False, write_only=True)
+    max_children = serializers.CharField(required=False, write_only=True)
+    max_infants = serializers.CharField(required=False, write_only=True)
+    max_student_eu = serializers.CharField(required=False, write_only=True)
+    max_youth = serializers.CharField(required=False, write_only=True)
 
     class Meta:
         model = TourPlan
         fields = "__all__"
-    
+
     def create(self, validated_data):
         validated_data.pop("max_adults")
         validated_data.pop("max_children")
