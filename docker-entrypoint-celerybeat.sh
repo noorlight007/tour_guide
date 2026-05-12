@@ -2,7 +2,7 @@
 set -e
 
 echo "==> Starting Celery Beat…"
-exec celery -A config beat \
+exec celery -A tour_management beat \
     --loglevel="${CELERY_LOG_LEVEL:-info}" \
     --scheduler django_celery_beat.schedulers:DatabaseScheduler
     # ↑ Replace "config" with your Django project name.
