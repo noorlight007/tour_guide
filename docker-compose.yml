@@ -14,7 +14,7 @@ services:
     ports:
       - "8000:8000"       # expose to host so server Nginx can proxy to it
     volumes:
-      - static_volume:/app/staticfiles
+      - static_volume:/app/static
       - media_volume:/app/media
     extra_hosts:
       - "host.docker.internal:host-gateway"
