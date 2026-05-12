@@ -12,11 +12,12 @@ services:
     env_file:
       - .env
     ports:
-      - "8000:8000"
+      - "8000:8000"       # expose to host so server Nginx can proxy to it
     volumes:
       - static_volume:/app/staticfiles
       - media_volume:/app/media
-    # Redis is external – no depends_on needed
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     entrypoint: ["sh", "/app/docker-entrypoint.sh"]
 
   # ── Celery Worker ───────────────────────────────────────────────────────────
@@ -30,6 +31,8 @@ services:
       - .env
     volumes:
       - media_volume:/app/media
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     entrypoint: ["sh", "/app/docker-entrypoint-celery.sh"]
 
   # ── Celery Beat (scheduler) ─────────────────────────────────────────────────
@@ -44,6 +47,8 @@ services:
     volumes:
       - celerybeat_data:/app/celerybeat
       - media_volume:/app/media
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     entrypoint: ["sh", "/app/docker-entrypoint-celerybeat.sh"]
 
 volumes:
