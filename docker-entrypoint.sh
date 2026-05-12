@@ -13,5 +13,5 @@ exec gunicorn \
     --access-logfile - \
     --error-logfile - \
     --log-level info \
-    config.wsgi:application
+    tour_management.wsgi:application
     # ↑ Replace "config.wsgi" with your actual wsgi module (e.g. myproject.wsgi)
