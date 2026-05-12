@@ -1,0 +1,52 @@
+version: "3.9"
+
+services:
+
+  # ── Django + Gunicorn ───────────────────────────────────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: django_web
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    # Redis is external – no depends_on needed
+    entrypoint: ["sh", "/app/docker-entrypoint.sh"]
+
+  # ── Celery Worker ───────────────────────────────────────────────────────────
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: django_celery_worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - media_volume:/app/media
+    entrypoint: ["sh", "/app/docker-entrypoint-celery.sh"]
+
+  # ── Celery Beat (scheduler) ─────────────────────────────────────────────────
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: django_celery_beat
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - celerybeat_data:/app/celerybeat
+      - media_volume:/app/media
+    entrypoint: ["sh", "/app/docker-entrypoint-celerybeat.sh"]
+
+volumes:
+  static_volume:
+  media_volume:
+  celerybeat_data:
