@@ -1,0 +1,15 @@
+# Host nginx and every API process must use the same upload directory.
+# Use with: docker compose -f docker-compose.yml -f docker-compose.production.yml ...
+services:
+  media_init:
+    volumes:
+      - ${MEDIA_HOST_PATH:-/var/www/tour_guide/media}:/app/media
+  web:
+    volumes:
+      - ${MEDIA_HOST_PATH:-/var/www/tour_guide/media}:/app/media
+  celery_worker:
+    volumes:
+      - ${MEDIA_HOST_PATH:-/var/www/tour_guide/media}:/app/media
+  celery_beat:
+    volumes:
+      - ${MEDIA_HOST_PATH:-/var/www/tour_guide/media}:/app/media

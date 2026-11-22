@@ -1,6 +1,7 @@
 import decimal
 
 from django.db import transaction
+from django.db.models import Sum
 from rest_framework import serializers
 
 from core.models import GuestUser, User
@@ -66,6 +67,17 @@ class BookingItemSerializer(serializers.ModelSerializer):
             diff_youth = new_youth - instance.num_youth
             diff_student_eu = new_student_eu - instance.num_student_eu
 
+            if not time_slot.has_availability(
+                adults=max(diff_adults, 0),
+                children=max(diff_children, 0),
+                infants=max(diff_infants, 0),
+                youth=max(diff_youth, 0),
+                student_eu=max(diff_student_eu, 0),
+            ):
+                raise serializers.ValidationError(
+                    "Not enough availability in selected time slot."
+                )
+
             time_slot.available_adults -= diff_adults
             time_slot.available_children -= diff_children
             time_slot.available_infants -= diff_infants
@@ -74,7 +86,32 @@ class BookingItemSerializer(serializers.ModelSerializer):
 
             time_slot.save()
 
-            return super().update(instance, validated_data)
+            counts_changed = any(
+                difference != 0
+                for difference in (
+                    diff_adults,
+                    diff_children,
+                    diff_infants,
+                    diff_youth,
+                    diff_student_eu,
+                )
+            )
+            if counts_changed:
+                instance.num_adults = new_adults
+                instance.num_children = new_children
+                instance.num_infants = new_infants
+                instance.num_youth = new_youth
+                instance.num_student_eu = new_student_eu
+                validated_data["item_price"] = instance.calculate_item_price()
+
+            instance = super().update(instance, validated_data)
+            if counts_changed or "item_price" in validated_data:
+                booking = Booking.objects.select_for_update().get(id=instance.booking_id)
+                booking.total_price = booking.booking_items.aggregate(
+                    total=Sum("item_price")
+                )["total"] or decimal.Decimal(0)
+                booking.save(update_fields=["total_price", "updated_at"])
+            return instance
 
 
 class BookingItemCreateSerializer(serializers.ModelSerializer):
@@ -194,7 +231,8 @@ class BookingSerializer(serializers.ModelSerializer):
                 total_price = decimal.Decimal(0)
                 order_items_to_create = []
                 for item in cartitems:
-                    total_price += item.item_price
+                    item_price = item.calculate_item_price()
+                    total_price += item_price
                     order_items_to_create.append(
                         BookingItem(
                             booking=booking,
@@ -205,7 +243,7 @@ class BookingSerializer(serializers.ModelSerializer):
                             num_infants=item.num_infants,
                             num_youth=item.num_youth,
                             num_student_eu=item.num_student_eu,
-                            item_price=item.item_price,
+                            item_price=item_price,
                         )
                     )
                     item.time_slot.available_adults -= item.num_adults

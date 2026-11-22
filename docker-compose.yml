@@ -2,6 +2,18 @@ version: "3.9"
 
 services:
 
+  # Existing volumes and host bind mounts may have been created by root.
+  # Only this one-shot service runs as root; application services remain non-root.
+  media_init:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    user: root
+    restart: "no"
+    volumes:
+      - media_volume:/app/media
+    entrypoint: ["sh", "/app/docker-entrypoint-media.sh"]
+
   # ── Django + Gunicorn ───────────────────────────────────────────────────────
   web:
     build:
@@ -16,6 +28,9 @@ services:
     volumes:
       - static_volume:/app/static
       - media_volume:/app/media
+    depends_on:
+      media_init:
+        condition: service_completed_successfully
     extra_hosts:
       - "host.docker.internal:host-gateway"
     entrypoint: ["sh", "/app/docker-entrypoint.sh"]
@@ -31,6 +46,9 @@ services:
       - .env
     volumes:
       - media_volume:/app/media
+    depends_on:
+      media_init:
+        condition: service_completed_successfully
     extra_hosts:
       - "host.docker.internal:host-gateway"
     entrypoint: ["sh", "/app/docker-entrypoint-celery.sh"]
@@ -47,6 +65,9 @@ services:
     volumes:
       - celerybeat_data:/app/celerybeat
       - media_volume:/app/media
+    depends_on:
+      media_init:
+        condition: service_completed_successfully
     extra_hosts:
       - "host.docker.internal:host-gateway"
     entrypoint: ["sh", "/app/docker-entrypoint-celerybeat.sh"]

@@ -43,8 +43,11 @@ COPY . .
 RUN SECRET_KEY=dummy-secret-for-build \
     python manage.py collectstatic --noinput
 
-# Create a non-root user for security
-RUN addgroup --system django && adduser --system --ingroup django django
+# Create writable upload directories before switching to the application user.
+# New Docker volumes inherit this ownership; media-init repairs existing volumes.
+RUN addgroup --system django && adduser --system --ingroup django django \
+    && mkdir -p /app/media/tour_plan \
+    && chown -R django:django /app/media
 USER django
 
 EXPOSE 8000

@@ -174,6 +174,8 @@ class CartItem(models.Model):
             self.num_adults * self.tour_plan.price_adult
             + self.num_children * self.tour_plan.price_child
             + self.num_infants * self.tour_plan.price_infant
+            + self.num_youth * self.tour_plan.price_youth
+            + self.num_student_eu * self.tour_plan.price_student_eu
         )
         return total
 
