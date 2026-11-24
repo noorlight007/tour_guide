@@ -2,6 +2,7 @@ import decimal
 
 from django.db import transaction
 from django.db.models import Sum
+from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework import serializers
 
 from core.models import GuestUser, User
@@ -127,7 +128,10 @@ class BookingSerializer(serializers.ModelSerializer):
         child=serializers.IntegerField(), write_only=True, required=False
     )
     full_name = serializers.CharField(write_only=True, required=False)
-    email = serializers.CharField(write_only=True, required=False)
+    email = serializers.EmailField(required=True, max_length=254)
+    whatsapp = PhoneNumberField(
+        required=True, help_text="WhatsApp number including the international country code."
+    )
     country = serializers.CharField(write_only=True, required=False)
     phone = serializers.CharField(write_only=True, required=False, allow_blank=True)
     book_now = serializers.BooleanField(write_only=True, required=False)
@@ -141,6 +145,9 @@ class BookingSerializer(serializers.ModelSerializer):
     def get_items(self, object):
         items = BookingItem.objects.filter(booking=object)
         return BookingItemSerializer(items, many=True).data
+
+    def validate_email(self, value):
+        return value.lower()
 
     def validate(self, attrs):
         status = attrs.get("status")
@@ -159,6 +166,10 @@ class BookingSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         with transaction.atomic():
+            contact_details = {
+                "email": validated_data.pop("email"),
+                "whatsapp": validated_data.pop("whatsapp"),
+            }
             user_type = "guest"
             is_book_now = validated_data.pop("book_now", None)
             single_item = validated_data.pop("single_item", None)
@@ -170,10 +181,10 @@ class BookingSerializer(serializers.ModelSerializer):
                 user = self.context["request"].user
                 if user.role in ["ADMIN", "SUPER_ADMIN"]:
                     full_name = validated_data.pop("full_name")
-                    email = validated_data.pop("email")
+                    email = contact_details["email"]
                     country = validated_data.pop("country")
                     phone = validated_data.pop("phone", None)
-                    user = User.objects.filter(email=email)
+                    user = User.objects.filter(email__iexact=email)
                     if not user.exists():
                         guest_user = GuestUser.objects.create(
                             full_name=full_name,
@@ -186,6 +197,7 @@ class BookingSerializer(serializers.ModelSerializer):
                             user_type="guest",
                             traveler_details=traveler_details,
                             booked_by_admin=True,
+                            **contact_details,
                         )
                     else:
                         booking = Booking.objects.create(
@@ -193,21 +205,23 @@ class BookingSerializer(serializers.ModelSerializer):
                             user_type="user",
                             traveler_details=traveler_details,
                             booked_by_admin=True,
+                            **contact_details,
                         )
                 else:
                     booking = Booking.objects.create(
                         user=user,
                         user_type=user_type,
                         traveler_details=traveler_details,
+                        **contact_details,
                     )
                 if not is_book_now:
                     cartitems = CartItem.objects.filter(user=user)
             else:
                 full_name = validated_data.pop("full_name")
-                email = validated_data.pop("email")
+                email = contact_details["email"]
                 country = validated_data.pop("country")
                 phone = validated_data.pop("phone", None)
-                user = User.objects.filter(email=email)
+                user = User.objects.filter(email__iexact=email)
                 if not user.exists():
                     guest_user = GuestUser.objects.create(
                         full_name=full_name, email=email, country=country, phone=phone
@@ -216,12 +230,14 @@ class BookingSerializer(serializers.ModelSerializer):
                         guest_user=guest_user,
                         user_type="guest",
                         traveler_details=traveler_details,
+                        **contact_details,
                     )
                 else:
                     booking = Booking.objects.create(
                         user=user.first(),
                         user_type="user",
                         traveler_details=traveler_details,
+                        **contact_details,
                     )
                 if not is_book_now:
                     cart_item_ids = validated_data.pop("cart_item_ids")
@@ -291,7 +307,8 @@ class BookingDetailsSerializer(serializers.ModelSerializer):
         child=serializers.IntegerField(), write_only=True, required=False
     )
     full_name = serializers.CharField(write_only=True, required=False)
-    email = serializers.CharField(write_only=True, required=False)
+    email = serializers.EmailField(required=False, max_length=254)
+    whatsapp = PhoneNumberField(required=False)
     country = serializers.CharField(write_only=True, required=False)
     phone = serializers.CharField(write_only=True, required=False, allow_blank=True)
     book_now = serializers.BooleanField(write_only=True, required=False)
@@ -307,6 +324,9 @@ class BookingDetailsSerializer(serializers.ModelSerializer):
         return BookingItemSerializerForBookinDetails(
             items, many=True, context=self.context
         ).data
+
+    def validate_email(self, value):
+        return value.lower()
 
     def validate(self, attrs):
         status = attrs.get("status")

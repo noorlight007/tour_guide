@@ -80,10 +80,45 @@ association if the second request fails.
 ## Backend regression tests
 
 ```sh
-python manage.py test tour_plan.tests --settings=tour_management.test_settings
+python manage.py test core.tests tour_plan.tests --settings=tour_management.test_settings
 ```
 
 These use an isolated SQLite database and temporary upload directories. They cover
 upload/replacement, preservation after upload failure, traveler quantity changes,
 capacity validation, and prices for all five traveler categories. They do not
 require a production database or change existing bookings.
+
+## Required contact details for sign-up and booking
+
+New sign-ups (`POST /api/v1/auth/register/register`) and new bookings
+(`POST /api/v1/tour/booking/`) must include both contact fields alongside their
+existing request fields:
+
+```json
+{
+  "email": "traveler@example.com",
+  "whatsapp": "+12025550123"
+}
+```
+
+`whatsapp` must be a valid international phone number including its country code.
+Missing, blank, null, or invalid contact values return field-specific HTTP 400
+errors. The separate `phone` field stays optional and does not substitute for
+`whatsapp`. New bookings require these contacts even for authenticated users and
+bookings made by an admin on a customer's behalf.
+
+Sign-up saves WhatsApp to the user profile. Each booking saves its submitted email
+and WhatsApp separately and includes them in booking responses, so later profile
+changes do not change the checkout contact details. Format validation does not
+verify that the number has a WhatsApp account.
+
+Apply migration `0015_booking_contact_details` before serving the updated API:
+
+```sh
+python manage.py migrate
+```
+
+The Docker web entrypoint already runs migrations on startup. Existing bookings
+keep empty contact fields and can still receive status updates without supplying
+new contacts. Update booking and sign-up clients to send both fields when
+deploying this API change.

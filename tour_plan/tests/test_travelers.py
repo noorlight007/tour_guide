@@ -127,6 +127,7 @@ class TravelerCountTests(TestCase):
             {
                 "full_name": "Guest Traveler",
                 "email": "guest@example.com",
+                "whatsapp": "+12025550123",
                 "country": "Italy",
                 "traveler_details": [],
                 "cart_item_ids": [item.pk],
@@ -156,6 +157,7 @@ class TravelerCountTests(TestCase):
             {
                 "full_name": "Guest Traveler",
                 "email": "guest@example.com",
+                "whatsapp": "+12025550123",
                 "country": "Italy",
                 "traveler_details": [],
                 "book_now": True,

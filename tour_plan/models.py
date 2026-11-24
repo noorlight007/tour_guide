@@ -3,6 +3,7 @@ import decimal
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
+from phonenumber_field.modelfields import PhoneNumberField
 
 from core.choices import Status
 from core.models import GuestUser, User
@@ -224,6 +225,11 @@ class Booking(models.Model):
         blank=True,
         related_name="guest_tour_plans",
     )
+
+    # Contact details captured at checkout, independent of later profile changes.
+    # Empty values are retained only for bookings made before these were required.
+    email = models.EmailField(blank=True, default="")
+    whatsapp = PhoneNumberField(blank=True, null=True)
 
     total_price = models.DecimalField(
         max_digits=10, decimal_places=2, default=decimal.Decimal(0)
