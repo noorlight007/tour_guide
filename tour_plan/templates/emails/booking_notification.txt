@@ -16,9 +16,10 @@ BOOKED TOURS ({{ items|length }}){% for item in items %}
   Guests: {{ item.participants }}
   Price: {{ item.price }}{% empty %}
 - No items found for this booking.{% endfor %}
-{% if traveler_details %}
-TRAVELER DETAILS
-{{ traveler_details }}
+{% if travelers %}
+TRAVELERS ({{ travelers|length }}){% for t in travelers %}
+{{ forloop.counter }}. {{ t.name }}{% for extra in t.extras %}
+   {{ extra.label }}: {{ extra.value }}{% endfor %}{% endfor %}
 {% endif %}
 --
 Automated notification. Please follow up with the customer to confirm the details.

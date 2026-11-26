@@ -20,6 +20,33 @@ from tour_plan.rest.serializers.tour_time import TimeSlotSerializer
 logger = logging.getLogger(__name__)
 
 
+def _format_travelers(raw):
+    """Turns traveler_details (list/dict/JSON string) into rows for the email."""
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw)
+        except ValueError:
+            return [{"name": raw, "extras": []}] if raw.strip() else []
+    if isinstance(raw, dict):
+        raw = [raw]
+    if not isinstance(raw, list):
+        return []
+
+    travelers = []
+    for entry in raw:
+        if isinstance(entry, dict):
+            name = entry.get("name") or entry.get("full_name") or "-"
+            extras = [
+                {"label": str(key).replace("_", " ").capitalize(), "value": value}
+                for key, value in entry.items()
+                if key not in ("name", "full_name") and value not in (None, "")
+            ]
+            travelers.append({"name": name, "extras": extras})
+        elif entry not in (None, ""):
+            travelers.append({"name": str(entry), "extras": []})
+    return travelers
+
+
 def _build_booking_email_context(booking):
     items = BookingItem.objects.filter(booking=booking).select_related(
         "tour_plan", "time_slot"
@@ -56,10 +83,6 @@ def _build_booking_email_context(booking):
 
     country = getattr(guest, "country", None) or getattr(user, "country", None)
 
-    traveler_details = booking.traveler_details
-    if isinstance(traveler_details, (dict, list)):
-        traveler_details = json.dumps(traveler_details, indent=2, ensure_ascii=False)
-
     return {
         "booking": booking,
         "items": item_rows,
@@ -68,7 +91,7 @@ def _build_booking_email_context(booking):
         "booked_by_admin": getattr(booking, "booked_by_admin", False),
         "country": country,
         "whatsapp_digits": re.sub(r"\D", "", str(booking.whatsapp)),
-        "traveler_details": traveler_details,
+        "travelers": _format_travelers(booking.traveler_details),
         "created_at": getattr(booking, "created_at", None),
     }
 
