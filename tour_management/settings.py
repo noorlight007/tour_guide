@@ -175,4 +175,4 @@ EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")          # your Gmail addres
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")  # Google app password
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
-BOOKING_NOTIFICATION_EMAIL = "contactwnoor@gmail.com"
+BOOKING_NOTIFICATION_EMAIL = "cityrometickets@gmail.com"
