@@ -1,7 +1,14 @@
 import decimal
+import json
+import logging
+import re
+import threading
 
+from django.conf import settings
+from django.core.mail import EmailMultiAlternatives
 from django.db import transaction
 from django.db.models import Sum
+from django.template.loader import render_to_string
 from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework import serializers
 
@@ -9,6 +16,92 @@ from core.models import GuestUser, User
 from tour_plan.models import Booking, BookingItem, CartItem, TimeSlot
 from tour_plan.rest.serializers.tour_plan import TourPlanSerializer
 from tour_plan.rest.serializers.tour_time import TimeSlotSerializer
+
+logger = logging.getLogger(__name__)
+
+
+def _build_booking_email_context(booking):
+    items = BookingItem.objects.filter(booking=booking).select_related(
+        "tour_plan", "time_slot"
+    )
+
+    item_rows = []
+    for item in items:
+        parts = [
+            f"{count} {label}"
+            for label, count in (
+                ("Adults", item.num_adults),
+                ("Children", item.num_children),
+                ("Youth", item.num_youth),
+                ("Infants", item.num_infants),
+                ("EU students", item.num_student_eu),
+            )
+            if count
+        ]
+        item_rows.append(
+            {
+                "tour": str(item.tour_plan),
+                "slot": str(item.time_slot),
+                "participants": ", ".join(parts) or "-",
+                "price": item.item_price,
+            }
+        )
+
+    guest = getattr(booking, "guest_user", None)
+    user = getattr(booking, "user", None)
+    customer_name = getattr(guest, "full_name", None)
+    if not customer_name and user is not None and hasattr(user, "get_full_name"):
+        customer_name = user.get_full_name()
+    customer_name = customer_name or booking.email
+
+    country = getattr(guest, "country", None) or getattr(user, "country", None)
+
+    traveler_details = booking.traveler_details
+    if isinstance(traveler_details, (dict, list)):
+        traveler_details = json.dumps(traveler_details, indent=2, ensure_ascii=False)
+
+    return {
+        "booking": booking,
+        "items": item_rows,
+        "customer_name": customer_name,
+        "customer_type": booking.user_type,
+        "booked_by_admin": getattr(booking, "booked_by_admin", False),
+        "country": country,
+        "whatsapp_digits": re.sub(r"\D", "", str(booking.whatsapp)),
+        "traveler_details": traveler_details,
+        "created_at": getattr(booking, "created_at", None),
+    }
+
+
+def _send_booking_notification(booking_id):
+    """Builds and sends the new-booking email. Never raises."""
+    try:
+        booking = Booking.objects.get(id=booking_id)
+        context = _build_booking_email_context(booking)
+
+        text_body = render_to_string("emails/booking_notification.txt", context)
+        html_body = render_to_string("emails/booking_notification.html", context)
+
+        email = EmailMultiAlternatives(
+            subject=f"New Booking #{booking.id} - {context['customer_name']}",
+            body=text_body,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[settings.BOOKING_NOTIFICATION_EMAIL],
+            reply_to=[booking.email],
+        )
+        email.attach_alternative(html_body, "text/html")
+        email.send(fail_silently=False)
+    except Exception:
+        logger.exception(
+            "Failed to send booking notification for booking %s", booking_id
+        )
+
+
+def send_booking_notification(booking_id):
+    # Background thread so the API response isn't delayed by SMTP
+    threading.Thread(
+        target=_send_booking_notification, args=(booking_id,), daemon=True
+    ).start()
 
 
 class BookingItemSerializer(serializers.ModelSerializer):
@@ -107,7 +200,9 @@ class BookingItemSerializer(serializers.ModelSerializer):
 
             instance = super().update(instance, validated_data)
             if counts_changed or "item_price" in validated_data:
-                booking = Booking.objects.select_for_update().get(id=instance.booking_id)
+                booking = Booking.objects.select_for_update().get(
+                    id=instance.booking_id
+                )
                 booking.total_price = booking.booking_items.aggregate(
                     total=Sum("item_price")
                 )["total"] or decimal.Decimal(0)
@@ -130,7 +225,8 @@ class BookingSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(write_only=True, required=False)
     email = serializers.EmailField(required=True, max_length=254)
     whatsapp = PhoneNumberField(
-        required=True, help_text="WhatsApp number including the international country code."
+        required=True,
+        help_text="WhatsApp number including the international country code.",
     )
     country = serializers.CharField(write_only=True, required=False)
     phone = serializers.CharField(write_only=True, required=False, allow_blank=True)
@@ -288,6 +384,8 @@ class BookingSerializer(serializers.ModelSerializer):
                 booking_item.time_slot.available_youth -= booking_item.num_youth
                 booking_item.time_slot.save()
 
+            # Send the notification only after the transaction commits
+            transaction.on_commit(lambda: send_booking_notification(booking.id))
             return booking
 
 

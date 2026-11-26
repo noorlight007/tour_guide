@@ -1,0 +1,24 @@
+NEW BOOKING #{{ booking.id }}
+{% if created_at %}{{ created_at|date:"D, d M Y, H:i" }}{% endif %}
+
+TOTAL PRICE: {{ booking.total_price }}
+Customer type: {{ customer_type }}{% if booked_by_admin %} (booked by admin){% endif %}
+
+CUSTOMER
+Name: {{ customer_name }}
+Email: {{ booking.email }}
+WhatsApp: {{ booking.whatsapp }}{% if country %}
+Country: {{ country }}{% endif %}
+
+BOOKED TOURS ({{ items|length }}){% for item in items %}
+- {{ item.tour }}
+  Time slot: {{ item.slot }}
+  Guests: {{ item.participants }}
+  Price: {{ item.price }}{% empty %}
+- No items found for this booking.{% endfor %}
+{% if traveler_details %}
+TRAVELER DETAILS
+{{ traveler_details }}
+{% endif %}
+--
+Automated notification. Please follow up with the customer to confirm the details.
